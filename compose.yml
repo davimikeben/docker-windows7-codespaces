@@ -1,0 +1,42 @@
+# 🪟 Windows 7 em Docker — compose principal (uso local com KVM)
+# Uso: cp .env.example .env && docker compose up -d
+# Depois abra http://localhost:8006 e aguarde a instalação automática.
+
+services:
+  windows:
+    # Imagem oficial pré-compilada (inicialização mais rápida).
+    image: dockurr/windows:latest
+    # 👇 Para usar o Dockerfile customizado deste repo (padrões PT-BR embutidos),
+    #    comente a linha "image:" acima e descomente o bloco "build:" abaixo:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    container_name: win7
+    environment:
+      VERSION: ${VERSION:-7u}            # 7u = Windows 7 Ultimate SP1 x64
+      LANGUAGE: ${LANGUAGE:-Portuguese}
+      REGION: ${REGION:-pt-BR}
+      KEYBOARD: ${KEYBOARD:-pt-BR}
+      RAM_SIZE: ${RAM_SIZE:-4G}
+      CPU_CORES: ${CPU_CORES:-2}
+      DISK_SIZE: ${DISK_SIZE:-30G}
+      USERNAME: ${USERNAME:-Docker}
+      PASSWORD: ${PASSWORD:-admin}
+      AUDIO: ${AUDIO:-Y}                 # áudio no navegador (ative em Settings → Advanced)
+      TZ: ${TZ:-America/Sao_Paulo}
+    devices:
+      - /dev/kvm                         # aceleração por hardware (quase nativo)
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "8006:8006"                      # 🌐 visualizador web
+      - "3389:3389/tcp"                  # 🔌 RDP
+      - "3389:3389/udp"
+    volumes:
+      - ./windows:/storage               # 💾 disco virtual + estado da VM
+      - ./shared:/shared                 # 📁 pasta compartilhada (vira o drive Z:)
+      - ./oem:/oem                       # 🧩 install.bat executado ao final do setup
+      # - ./custom.iso:/custom.iso       # 💿 ISO própria (descomente p/ usar; VERSION é ignorado)
+    restart: unless-stopped
+    stop_grace_period: 2m                # dá tempo do Windows desligar com segurança
